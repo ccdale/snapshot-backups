@@ -9,7 +9,8 @@ function moveDirsUp()
   nsrc=${stub}.${srcn}
   ndest=${stub}.${destn}
   if $RNET ls ${ndest} >/dev/null 2>&1; then
-    $RNET rm -vrf ${ndest}
+    echo "removing ${ndest}"
+    $RNET rm -rf ${ndest}
   fi
   while [[ $srcn -gt 0 ]]; do
     if $RNET ls ${nsrc} >/dev/null 2>&1; then
