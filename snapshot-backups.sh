@@ -1,5 +1,15 @@
 #!/bin/bash
 
+function msg()
+{
+  dt=$(date|cut -d" " -f1-4)
+  # set IFS to nothing so that read doesn't strip leading and trailing whitespace
+  # use -r for read so that escape sequences are not interpreted
+  # use printf rather than echo so that escape sequences are not interpreted
+  while IFS= read -r line; do
+    printf "%s %s\n" $dt "$line"
+  done
+}
 function moveDirsUp()
 {
   when=$1
@@ -8,13 +18,18 @@ function moveDirsUp()
   destn=$maxnum
   nsrc=${stub}.${srcn}
   ndest=${stub}.${destn}
+  if [[ "$when" = "hourly" ]]; then
+    fstop=0
+  else
+    fstop=-1
+  fi
   if $RNET ls ${ndest} >/dev/null 2>&1; then
-    echo "removing ${ndest}"
+    msg "removing ${ndest}"
     $RNET rm -rf ${ndest}
   fi
-  while [[ $srcn -gt 0 ]]; do
+  while [[ $srcn -gt $fstop ]]; do
     if $RNET ls ${nsrc} >/dev/null 2>&1; then
-      $RNET mv -v ${nsrc} ${ndest}
+      msg $($RNET mv -v ${nsrc} ${ndest})
     fi
     destn=$srcn
     srcn=$(( srcn - 1 ))
@@ -26,8 +41,8 @@ function moveDirsUp()
     hourly) ndest=snapshots/hourly.1;;
     *) ndest=snapshots/${when}.0;;
   esac
-  echo "Copying ${nsrc} to ${ndest}"
-  time $RNET cp -al ${nsrc} ${ndest}
+  msg "Copying ${nsrc} to ${ndest}"
+  msg $($RNET cp -al ${nsrc} ${ndest})
 }
 
 ME=${0##*/}
@@ -39,7 +54,7 @@ excludefn=${HOME}/.rnet-exclude
 while getopts "e:hn:t:" opt; do
   case $opt in
     e) excludefn=$OPTARG;;
-    h) echo "$ME [ehtn]
+    h) msg "$ME [ehtn]
       Snapshot style backups to rsync.net
       requires that the key 'rnet' is set in .ssh/config
 
@@ -56,6 +71,7 @@ while getopts "e:hn:t:" opt; do
 done
 shift $((OPTIND-1))
 
+msg "$xtype backup starting"
 rsyncexc="--exclude-from $excludefn --delete-excluded"
 rsyncopts="-ave ssh"
 
@@ -65,5 +81,7 @@ src=${HOME}/
 moveDirsUp ${xtype}
 
 if [[ "$xtype" == "hourly" ]]; then
-  time rsync $rsyncopts $rsyncexc $src $dest
+  msg $(rsync $rsyncopts $rsyncexc $src $dest)
 fi
+
+msg "$xtype backup completed"
