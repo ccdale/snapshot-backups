@@ -3,12 +3,7 @@
 function msg()
 {
   dt=$(date|cut -d" " -f1-4)
-  # set IFS to nothing so that read doesn't strip leading and trailing whitespace
-  # use -r for read so that escape sequences are not interpreted
-  # use printf rather than echo so that escape sequences are not interpreted
-  while IFS= read -r line; do
-    printf "%s %s\n" $dt "$line"
-  done
+  echo "$dt $@"
 }
 function moveDirsUp()
 {
@@ -29,7 +24,8 @@ function moveDirsUp()
   fi
   while [[ $srcn -gt $fstop ]]; do
     if $RNET ls ${nsrc} >/dev/null 2>&1; then
-      msg $($RNET mv -v ${nsrc} ${ndest})
+      msg "moving ${nsrc} -> ${ndest}"
+      $RNET mv ${nsrc} ${ndest}
     fi
     destn=$srcn
     srcn=$(( srcn - 1 ))
@@ -42,7 +38,7 @@ function moveDirsUp()
     *) ndest=snapshots/${when}.0;;
   esac
   msg "Copying ${nsrc} to ${ndest}"
-  msg $($RNET cp -al ${nsrc} ${ndest})
+  $RNET cp -al ${nsrc} ${ndest}
 }
 
 ME=${0##*/}
@@ -54,7 +50,7 @@ excludefn=${HOME}/.rnet-exclude
 while getopts "e:hn:t:" opt; do
   case $opt in
     e) excludefn=$OPTARG;;
-    h) msg "$ME [ehtn]
+    h) echo "$ME [ehtn]
       Snapshot style backups to rsync.net
       requires that the key 'rnet' is set in .ssh/config
 
@@ -81,7 +77,8 @@ src=${HOME}/
 moveDirsUp ${xtype}
 
 if [[ "$xtype" == "hourly" ]]; then
-  msg $(rsync $rsyncopts $rsyncexc $src $dest)
+  msg "starting rsync: $src $dest"
+  rsync $rsyncopts $rsyncexc $src $dest
 fi
 
 msg "$xtype backup completed"
