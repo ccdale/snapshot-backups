@@ -1,9 +1,9 @@
-/home/chris/logs/snapshot-backups.log {
+/home/$USER/logs/snapshot-backups.log {
   rotate 7
   daily
   missingok
   notifempty
   delaycompress
   compress
-  create 644 chris chris
+  create 644 $USER $USER
 }

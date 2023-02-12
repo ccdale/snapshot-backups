@@ -8,7 +8,7 @@ function msg()
 function moveDirsUp()
 {
   when=$1
-  stub=snapshots/$when
+  stub=${broot}/$when
   srcn=$(( maxnum - 1 ))
   destn=$maxnum
   nsrc=${stub}.${srcn}
@@ -32,20 +32,30 @@ function moveDirsUp()
     nsrc=${stub}.${srcn}
     ndest=${stub}.${destn}
   done
-  nsrc=snapshots/hourly.0
+  nsrc=${broot}/hourly.0
   case $when in
-    hourly) ndest=snapshots/hourly.1;;
-    *) ndest=snapshots/${when}.0;;
+    hourly) ndest=${broot}/${when}.1;;
+    *) ndest=${broot}/${when}.0;;
   esac
   msg "Copying ${nsrc} to ${ndest}"
   $RNET cp -al ${nsrc} ${ndest}
 }
 
 ME=${0##*/}
-maxnum=6
-xtype=hourly
-RNET="ssh rnet"
-excludefn=${HOME}/.rnet-exclude
+ME=${ME%%.sh}
+
+cfgfn=${HOME}/.config/${ME}.cfg
+if [ ! -r $cfgfn ]; then
+    echo "Cannot find config file $cfgfn"
+    exit 1
+fi
+
+source $cfgfn
+
+# maxnum=6
+# xtype=hourly
+# RNET="ssh rnet"
+# excludefn=${HOME}/.rnet-exclude
 
 while getopts "e:hn:t:" opt; do
   case $opt in
@@ -67,12 +77,16 @@ while getopts "e:hn:t:" opt; do
 done
 shift $((OPTIND-1))
 
-msg "$xtype backup starting"
+msg "$ME $xtype backup starting"
+msg "exlude from file $excludefn"
+msg "$maxnum backups to keep"
+
 rsyncexc="--exclude-from $excludefn --delete-excluded"
 rsyncopts="-ave ssh"
 
-dest=rnet:snapshots/${xtype}.0
-src=${HOME}/
+# broot=seagate4/snapshots/$(hostname)/$USER
+# dest=rnet:${broot}/${xtype}.0
+# src=${HOME}/
 
 moveDirsUp ${xtype}
 
